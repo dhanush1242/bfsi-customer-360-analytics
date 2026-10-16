@@ -1,0 +1,48 @@
+{
+  "name": "BFSI_Customer_360_Semantic_Model",
+  "version": "1.0",
+  "entities": [
+    {
+      "name": "dim_customer",
+      "type": "Dimension",
+      "primaryKey": "customer_key",
+      "attributes": ["customer_id", "full_name", "email", "age", "age_bracket", "annual_income", "income_bracket", "customer_segment", "credit_score", "kyc_status", "risk_tier"]
+    },
+    {
+      "name": "dim_date",
+      "type": "Dimension",
+      "primaryKey": "date_key",
+      "attributes": ["full_date", "day_name", "month", "month_name", "quarter", "year", "fiscal_quarter"]
+    },
+    {
+      "name": "dim_product",
+      "type": "Dimension",
+      "primaryKey": "product_key",
+      "attributes": ["product_id", "product_category", "product_sub_type", "product_name", "standard_interest_rate"]
+    },
+    {
+      "name": "dim_channel",
+      "type": "Dimension",
+      "primaryKey": "channel_key",
+      "attributes": ["channel_code", "channel_name", "channel_type"]
+    },
+    {
+      "name": "fact_transactions",
+      "type": "Fact",
+      "foreignKeys": ["customer_key", "date_key", "product_key", "channel_key"],
+      "measures": ["amount", "fee_amount", "is_fraud_flag"]
+    },
+    {
+      "name": "fact_loan_performance",
+      "type": "Fact",
+      "foreignKeys": ["customer_key", "date_key", "product_key"],
+      "measures": ["principal_amount", "outstanding_balance", "overdue_days", "overdue_amount", "loan_loss_provision"]
+    },
+    {
+      "name": "c360_customer_mart",
+      "type": "ServingMart",
+      "primaryKey": "customer_key",
+      "measures": ["total_deposit_balance", "total_loan_outstanding", "total_credit_limit", "total_products_held", "ltv_score", "composite_risk_score", "txn_volume_30d"]
+    }
+  ]
+}

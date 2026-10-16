@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Enterprise Data Warehouse (PostgreSQL 16)
+  postgres_edw:
+    image: postgres:16-alpine
+    container_name: bfsi_postgres_dw
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bfsi_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bfsi_secure_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-bfsi_enterprise_dw}
+    ports:
+      - "5432:5432"
+    volumes:
+      - edw_pgdata:/var/lib/postgresql/data
+      - ./sql/00_schema_source_db.sql:/docker-entrypoint-initdb.d/01_source.sql
+      - ./sql/01_ddl_star_schema.sql:/docker-entrypoint-initdb.d/02_warehouse.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bfsi_admin -d bfsi_enterprise_dw"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Customer 360 API & BI Dashboard
+  c360_api:
+    build: .
+    container_name: bfsi_customer_360_app
+    restart: always
+    depends_on:
+      postgres_edw:
+        condition: service_healthy
+    environment:
+      - DB_TYPE=postgres
+      - POSTGRES_SERVER=postgres_edw
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=bfsi_admin
+      - POSTGRES_PASSWORD=bfsi_secure_pass_2026
+      - POSTGRES_DB=bfsi_enterprise_dw
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+
+volumes:
+  edw_pgdata:
+    driver: local

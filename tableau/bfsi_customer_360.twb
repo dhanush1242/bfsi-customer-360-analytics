@@ -1,0 +1,51 @@
+<?xml version="1.0" ?>
+<workbook source-build="2023.3.0" source-platform="win" version="18.1" xml:base="http://localhost">
+  <preferences/>
+  <datasources>
+    <datasource caption="BFSI Customer 360 Analytical Mart" inline="true" name="federated.bfsi_c360" version="18.1">
+      <connection class="federated">
+        <named-connections>
+          <named-connection name="postgres_c360" caption="PostgreSQL EDW">
+            <connection class="postgres" server="localhost" port="5432" dbname="bfsi_enterprise_dw" username="edw_user"/>
+          </named-connection>
+        </named-connections>
+        <relation connection="postgres_c360" name="c360_customer_mart" table="[public].[c360_customer_mart]" type="table"/>
+      </connection>
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name="Executive KPI Summary">
+      <table>
+        <view>
+          <datasources/>
+        </view>
+      </table>
+    </worksheet>
+    <worksheet name="Risk vs Relationship Value">
+      <table>
+        <view>
+          <datasources/>
+        </view>
+      </table>
+    </worksheet>
+    <worksheet name="Cross-Sell by Segment">
+      <table>
+        <view>
+          <datasources/>
+        </view>
+      </table>
+    </worksheet>
+  </worksheets>
+  <dashboards>
+    <dashboard name="BFSI Customer 360 Executive Cockpit">
+      <style/>
+      <size maxheight="900" maxwidth="1400" minheight="900" minwidth="1400"/>
+      <zones>
+        <zone h="100000" id="1" type-v2="layout-basic" w="100000" x="0" y="0"/>
+      </zones>
+    </dashboard>
+  </dashboards>
+  <windows>
+    <window class="dashboard" name="BFSI Customer 360 Executive Cockpit"/>
+  </windows>
+</workbook>

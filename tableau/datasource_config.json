@@ -1,0 +1,144 @@
+{
+  "name": "BFSI_Customer_360_Tableau_DataSource",
+  "version": "1.0",
+  "connection": {
+    "class": "postgres",
+    "server": "localhost",
+    "port": 5432,
+    "dbname": "bfsi_enterprise_dw",
+    "username": "edw_user",
+    "authentication": "password",
+    "sslmode": "prefer"
+  },
+  "tables": [
+    {
+      "schema": "public",
+      "name": "dim_customer",
+      "role": "Dimension",
+      "alias": "Customer",
+      "join_key": "customer_key",
+      "description": "Conformed customer dimension with demographics, credit scores, KYC, and risk tiers"
+    },
+    {
+      "schema": "public",
+      "name": "dim_date",
+      "role": "Dimension",
+      "alias": "Date",
+      "join_key": "date_key",
+      "description": "Calendar dimension with fiscal quarters and month names"
+    },
+    {
+      "schema": "public",
+      "name": "dim_product",
+      "role": "Dimension",
+      "alias": "Product",
+      "join_key": "product_key",
+      "description": "Banking product catalog (Deposits, Loans, Credit Cards)"
+    },
+    {
+      "schema": "public",
+      "name": "dim_channel",
+      "role": "Dimension",
+      "alias": "Channel",
+      "join_key": "channel_key",
+      "description": "Omnichannel touchpoints (Mobile, Web, ATM, Branch, POS)"
+    },
+    {
+      "schema": "public",
+      "name": "dim_branch",
+      "role": "Dimension",
+      "alias": "Branch",
+      "join_key": "branch_key",
+      "description": "Geographic branch network across US metro areas"
+    },
+    {
+      "schema": "public",
+      "name": "fact_transactions",
+      "role": "Fact",
+      "alias": "Transactions",
+      "foreign_keys": ["customer_key", "date_key", "product_key", "channel_key"],
+      "measures": ["amount", "fee_amount"],
+      "description": "25K granular payment events with merchant categories and fraud flags"
+    },
+    {
+      "schema": "public",
+      "name": "fact_daily_account_snapshot",
+      "role": "Fact",
+      "alias": "Account Snapshots",
+      "foreign_keys": ["customer_key", "date_key"],
+      "measures": ["current_balance", "available_balance", "interest_accrued"],
+      "description": "Daily deposit balance tracking"
+    },
+    {
+      "schema": "public",
+      "name": "fact_loan_performance",
+      "role": "Fact",
+      "alias": "Loan Performance",
+      "foreign_keys": ["customer_key", "date_key", "product_key"],
+      "measures": ["principal_amount", "outstanding_balance", "overdue_days", "overdue_amount", "loan_loss_provision"],
+      "description": "Loan delinquency, NPL tracking, and loss provisions"
+    },
+    {
+      "schema": "public",
+      "name": "fact_customer_interactions",
+      "role": "Fact",
+      "alias": "CRM Interactions",
+      "foreign_keys": ["customer_key", "date_key"],
+      "measures": ["sentiment_score"],
+      "description": "4K omnichannel CRM touchpoints with sentiment analysis"
+    },
+    {
+      "schema": "public",
+      "name": "c360_customer_mart",
+      "role": "ServingMart",
+      "alias": "Customer 360 Mart",
+      "join_key": "customer_key",
+      "measures": ["total_deposit_balance", "total_loan_outstanding", "total_credit_limit", "total_products_held", "ltv_score", "composite_risk_score", "txn_volume_30d"],
+      "description": "Consolidated single-row-per-customer analytical serving layer"
+    }
+  ],
+  "relationships": [
+    {"from": "dim_customer.customer_key", "to": "fact_transactions.customer_key", "type": "inner"},
+    {"from": "dim_customer.customer_key", "to": "fact_daily_account_snapshot.customer_key", "type": "inner"},
+    {"from": "dim_customer.customer_key", "to": "fact_loan_performance.customer_key", "type": "inner"},
+    {"from": "dim_customer.customer_key", "to": "fact_customer_interactions.customer_key", "type": "inner"},
+    {"from": "dim_customer.customer_key", "to": "c360_customer_mart.customer_key", "type": "inner"},
+    {"from": "dim_date.date_key", "to": "fact_transactions.date_key", "type": "inner"},
+    {"from": "dim_date.date_key", "to": "fact_daily_account_snapshot.date_key", "type": "inner"},
+    {"from": "dim_date.date_key", "to": "fact_loan_performance.date_key", "type": "inner"},
+    {"from": "dim_product.product_key", "to": "fact_transactions.product_key", "type": "inner"},
+    {"from": "dim_channel.channel_key", "to": "fact_transactions.channel_key", "type": "inner"}
+  ],
+  "calculated_fields": [
+    {
+      "name": "Total AUM",
+      "formula": "[Total Deposit Balance] + [Total Loan Outstanding]",
+      "description": "Assets Under Management across all products"
+    },
+    {
+      "name": "NPL Flag",
+      "formula": "IF [Overdue Days] >= 90 THEN 'NPL' ELSE 'Performing' END",
+      "description": "Non-Performing Loan classification"
+    },
+    {
+      "name": "Delinquency Bucket",
+      "formula": "IF [Overdue Days] = 0 THEN 'Current' ELSEIF [Overdue Days] < 30 THEN '1-29 DPD' ELSEIF [Overdue Days] < 60 THEN '30-59 DPD' ELSEIF [Overdue Days] < 90 THEN '60-89 DPD' ELSE '90+ DPD (NPL)' END",
+      "description": "Days Past Due aging bucket classification"
+    },
+    {
+      "name": "Credit Utilization %",
+      "formula": "IF [Total Credit Limit] > 0 THEN [Total Credit Outstanding] / [Total Credit Limit] * 100 ELSE 0 END",
+      "description": "Credit card utilization percentage"
+    },
+    {
+      "name": "Customer Risk Category",
+      "formula": "IF [Composite Risk Score] >= 50 THEN 'Critical' ELSEIF [Composite Risk Score] >= 35 THEN 'High' ELSEIF [Composite Risk Score] >= 20 THEN 'Medium' ELSE 'Low' END",
+      "description": "Risk tier classification based on composite score"
+    },
+    {
+      "name": "Engagement Health",
+      "formula": "IF [Engagement Status] = 'ACTIVE' THEN 'Healthy' ELSEIF [Engagement Status] = 'DECLINING' THEN 'At Risk' ELSEIF [Engagement Status] = 'DORMANT' THEN 'Critical' ELSE 'Stable' END",
+      "description": "Customer engagement health indicator"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<datasource inline="true" version="18.1" formatted-name="BFSI Enterprise Customer 360 EDW">
+  <connection class="federated">
+    <named-connections>
+      <named-connection name="postgres.bfsi_enterprise_dw" caption="BFSI PostgreSQL Data Warehouse">
+        <connection class="postgres" server="localhost" port="5432" dbname="bfsi_enterprise_dw" username="edw_user" authentication="username-password" sslmode="prefer"/>
+      </named-connection>
+    </named-connections>
+    <relation connection="postgres.bfsi_enterprise_dw" name="c360_customer_mart" table="[public].[c360_customer_mart]" type="table"/>
+  </connection>
+  <column caption="Cross-Sell Penetration %" datatype="real" name="[Calculation_CrossSellRatio]" role="measure" type="quantitative">
+    <calculation class="tableau" formula="COUNT(IF [has_multiple_products] = TRUE THEN [customer_key] END) / COUNT([customer_key]) * 100"/>
+  </column>
+  <column caption="Total AUM (USD)" datatype="real" name="[Calculation_TotalAUM]" role="measure" type="quantitative">
+    <calculation class="tableau" formula="ZN(SUM([total_deposit_balance])) + ZN(SUM([total_loan_outstanding]))"/>
+  </column>
+  <column caption="Delinquency Rate %" datatype="real" name="[Calculation_DelinquencyRate]" role="measure" type="quantitative">
+    <calculation class="tableau" formula="COUNT(IF [has_overdue_loan] = TRUE THEN [customer_key] END) / COUNT([customer_key]) * 100"/>
+  </column>
+  <column caption="Credit Utilization Tier" datatype="string" name="[Calculation_CreditUtilTier]" role="dimension" type="nominal">
+    <calculation class="tableau" formula="IF [credit_utilization_pct] &gt; 80 THEN &quot;Critical (&gt;80%)&quot; ELSEIF [credit_utilization_pct] &gt; 50 THEN &quot;Moderate (50-80%)&quot; ELSE &quot;Healthy (&lt;50%)&quot; END"/>
+  </column>
+  <column caption="Customer Relationship Value Tier" datatype="string" name="[Calculation_RelValueTier]" role="dimension" type="nominal">
+    <calculation class="tableau" formula="IF [total_relationship_value] &gt;= 250000 THEN &quot;Platinum Tier ($250k+)&quot; ELSEIF [total_relationship_value] &gt;= 100000 THEN &quot;Gold Tier ($100k-$250k)&quot; ELSEIF [total_relationship_value] &gt;= 25000 THEN &quot;Silver Tier ($25k-$100k)&quot; ELSE &quot;Bronze Tier (&lt;$25k)&quot; END"/>
+  </column>
+  <column caption="Engagement Health Status" datatype="string" name="[Calculation_EngagementStatus]" role="dimension" type="nominal">
+    <calculation class="tableau" formula="IF [digital_engagement_score] &gt;= 75 THEN &quot;Highly Active&quot; ELSEIF [digital_engagement_score] &gt;= 40 THEN &quot;Moderately Engaged&quot; ELSE &quot;Dormant / At-Risk&quot; END"/>
+  </column>
+</datasource>
